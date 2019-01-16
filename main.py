@@ -21,6 +21,8 @@ DEF_TERMINAL = 0
 memo1_cnt = 0
 memo2_cnt = 0
 
+thread_alive = 0
+
 # ----- Help function ----------------- #
 
 def help_func():
@@ -258,15 +260,20 @@ def modbus_func2(id, func, addr, num, data0):
     else:
         flag_en = 0
 
+    '''
     memo1_cnt+=1
     if (flag_en):
         if DEF_TERMINAL:
             print(''.join('{:02X} '.format(val) for val in query))
         else:
-            gui.memo1.insert(INSERT, "%d) " % memo1_cnt)
-            gui.memo1.insert(INSERT, "".join('{:02X} '.format(val) for val in query).join("\r\n"))
+            gui.memo_msg.insert(1.0, "".join('{:02X} '.format(val) for val in query).join("\r\n"))
+            # gui.memo_send.insert(INSERT, "%d) " % memo1_cnt)
+            # gui.memo_send.insert(INSERT, "".join('{:02X} '.format(val) for val in query).join("\r\n"))
+    '''
+    if flag_en == 0:
+        query = []
 
-    ser.write(query)
+    # ser.write(query)
 
         # read data old version^ now in thread
         # n = ser.in_waiting
@@ -309,10 +316,11 @@ def modbus_func2(id, func, addr, num, data0):
         #             print("__!!! FAIL !!!__", end=' ')
         #
         #     print("")
-    return
+    return query
 
 def recv_msg():
     global memo2_cnt
+    mode = dict_mode[gui.var1.get()]
 
     n = ser.in_waiting
     delay_cnt = 0
@@ -334,23 +342,29 @@ def recv_msg():
     char_pt = ord('.')
     n = len(out)
     if n != 0:
+        # if DEF_TERMINAL:
+        #     print("n={:d}: ".format(n), end=' ')
+        # else:
+        #     memo2_cnt += 1
+        #     gui.memo_recv.insert(INSERT, "{:d}) n={:d}: ".format(memo2_cnt, n))
+
         if DEF_TERMINAL:
             print("n={:d}: ".format(n), end=' ')
         else:
             memo2_cnt += 1
-            gui.memo2.insert(INSERT, "{:d}) n={:d}: ".format(memo2_cnt, n))
+            gui.memo_recv.insert(INSERT, "{:d}: ".format(memo2_cnt, n))
 
         if mode == 'hex':
             if DEF_TERMINAL:
                 print("".join("{:02X} ".format(val) for val in out))
             else:
-                gui.memo2.insert(INSERT, "".join("{:02X} ".format(val) for val in out).join("\r\n"))
+                gui.memo_recv.insert(INSERT, "".join("{:02X} ".format(val) for val in out).join("\r\n"))
 
         elif mode == 'dec':
             if DEF_TERMINAL:
                 print("".join("{:d} ".format(val) for val in out))
             else:
-                gui.memo2.insert(INSERT, "".join("{:0d} ".format(val) for val in out))
+                gui.memo_recv.insert(INSERT, "".join("{:0d} ".format(val) for val in out).join("\r\n"))
 
         elif mode == 'sym':
 
@@ -360,29 +374,30 @@ def recv_msg():
                     if DEF_TERMINAL:
                         print(chr(i), end='')
                     else:
-                        gui.memo2.insert(INSERT, chr(i))
+                        gui.memo_recv.insert(INSERT, chr(i))
 
                 except:
                     if DEF_TERMINAL:
                         print('x', end=' ')
                     else:
-                        gui.memo2.insert(INSERT, "x")
+                        gui.memo_recv.insert(INSERT, "x")
 
             if DEF_TERMINAL:
                 print('\r\n', out, end=' ')
             else:
-                gui.memo2.insert(INSERT, "\r\n")
+                gui.memo_recv.insert(INSERT, "\r\n")
 
         else:
             if DEF_TERMINAL:
                 print(out, end=' ')
             else:
-                gui.memo2.insert(INSERT, "else var\r\n")
+                gui.memo_recv.insert(INSERT, "else var\r\n")
 
     return out
 
 def func_recv():
-    while True:
+    global thread_alive
+    while thread_alive:
         msg_recv = recv_msg()
         n = len(msg_recv)
         if (n > 2):
@@ -397,36 +412,87 @@ def func_recv():
     return
 
 def func_read():
-    str1 = gui.memo1.get(1.0, END)
+    str1 = gui.memo_send.get(1.0, END)
     gui.lbl1.config(text="memo1: {0}".format(str1))
-    gui.memo1.insert(INSERT, ".end")
+    gui.memo_send.insert(INSERT, ".end")
     return
 
 def func_clear():
-    global memo1_cnt, memo2_cnt
+    global memo1_cnt
     memo1_cnt = 0
+    gui.memo_send.delete(1.0, END)
+    return
+
+
+def func_clear2():
+    global memo2_cnt
     memo2_cnt = 0
-    gui.memo1.delete(1.0, END)
-    gui.memo2.delete(1.0, END)
+    gui.memo_recv.delete(1.0, END)
+    return
+
+def func_create_modbus_msg():
+    id = int(gui.ent1.get(), 16)
+    func = int(gui.ent2.get(), 16)
+    addr = int(gui.ent3.get(), 16)
+    num = int(gui.ent4.get(), 16)
+    msg = modbus_func2(id, func, addr, num, 0)
+    if msg:
+        gui.memo_msg.delete(1.0, END)
+        gui.memo_msg.insert(1.0, "".join('{:02X} '.format(val) for val in msg))
+        #gui.memo_msg.insert(1.0, "".join('{:02X} '.format(val) for val in msg).join("\r\n"))
+    else:
+        gui.memo_msg.delete(1.0, END)
+        gui.memo_msg.insert(1.0, "error")
+    return
+
+def func_send():
+    msg_memo = str(gui.memo_send.get(1.0, END))
+    msg0 = msg_memo.replace("\n", " ").replace("\r", " ").split()
+    print(msg0)
+    msg = []
+    for i in msg0:
+        msg.append(int(i, 16))
+
+    ser.write(msg)
+    time.sleep(0.1)
     return
 
 def func_test1():
-    Nblocks = 1
-    modbus_func2(0x7f, 0x03, 0, Nblocks, 0)
+    msg = modbus_func2(0x7f, 0x03, 0, 1, 0)
+    ser.write(msg)
     time.sleep(0.5)
+    return
+
+def func_test2():
+    while 1:
+        gui.memo_recv.insert(INSERT, "test2\r\n")
+        time.sleep(2)
     return
 
 
 def main():
+    global thread_alive
+
     thread_recv = threading.Thread(target=func_recv)
+    thread_alive = 1
     thread_recv.start()
 
-    #print(gui.memo1.keys())
+    # thread_test2 = threading.Thread(target=func_test2)
+    # thread_test2.start()
+
+    print(gui.scrolly_recv.keys())
 
     gui.create_place()
-    gui.btn1.config(command=func_test1)
-    gui.btn2.config(command=func_clear)
+    gui.btn_send.config(command=func_send)  # func_test1
+    gui.btn_clr1.config(command=func_clear)
+    gui.btn_clr2.config(command=func_clear2)
+    gui.btn_get_msg.config(command=func_create_modbus_msg)
+
     gui.start()
+
+    thread_alive = 0
+    thread_recv.join(5)
+
 
     # ----- main loop --------------------- #
 
@@ -672,3 +738,4 @@ n = ser.in_waiting
 out = ser.read(n)  # first read???
 
 main()
+exit("Exit")

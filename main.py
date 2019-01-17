@@ -745,7 +745,7 @@ for i in colors_def.systemColorsWin:
     rgb16 = (0,0,0)
     rgb16 = gui.root.winfo_rgb(i)
     rgb8 = (rgb16[0]>>8, rgb16[1]>>8, rgb16[2]>>8)
-    print(icolor, ") ", i, " rgb16: ({0:X},{1:X},{2:X})".format(rgb16[0],rgb16[1],rgb16[2]), ", rgb8:  ({0:X},{1:X},{2:X})".format(rgb8[0],rgb8[1],rgb8[2]))
+    print(icolor, ") ", i, " rgb16: \"#{0:04X}{1:04X}{2:04X}\"".format(rgb16[0],rgb16[1],rgb16[2]), ", rgb8:  \"#{0:02X}{1:02X}{2:02X}\"".format(rgb8[0],rgb8[1],rgb8[2]))
 
 
 # ----- Main Prog -------------- #

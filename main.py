@@ -11,6 +11,7 @@ import random
 import threading
 
 import crc16_modbus
+import  colors_def
 
 import gui
 from tkinter import END, INSERT, SEL
@@ -737,5 +738,16 @@ print(ser.name)
 n = ser.in_waiting
 out = ser.read(n)  # first read???
 
+
+# ----- Test ColorsName -> (R,G,B) -------------- #
+for i in colors_def.systemColorsWin:
+    icolor = colors_def.systemColorsWin.index(i)
+    rgb16 = (0,0,0)
+    rgb16 = gui.root.winfo_rgb(i)
+    rgb8 = (rgb16[0]>>8, rgb16[1]>>8, rgb16[2]>>8)
+    print(icolor, ") ", i, " rgb16: ({0:X},{1:X},{2:X})".format(rgb16[0],rgb16[1],rgb16[2]), ", rgb8:  ({0:X},{1:X},{2:X})".format(rgb8[0],rgb8[1],rgb8[2]))
+
+
+# ----- Main Prog -------------- #
 main()
 exit("Exit")

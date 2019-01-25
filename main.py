@@ -24,6 +24,8 @@ memo2_cnt = 0
 
 thread_alive = 0
 
+memo_recv_pause = 0
+
 # ----- Help function ----------------- #
 
 def help_func():
@@ -321,6 +323,8 @@ def modbus_func2(id, func, addr, num, data0):
 
 def recv_msg():
     global memo2_cnt
+    global memo_recv_pause
+    
     mode = dict_mode[gui.var1.get()]
 
     n = ser.in_waiting
@@ -342,7 +346,7 @@ def recv_msg():
 
     char_pt = ord('.')
     n = len(out)
-    if n != 0:
+    if n != 0 and memo_recv_pause == 0:
         # if DEF_TERMINAL:
         #     print("n={:d}: ".format(n), end=' ')
         # else:
@@ -354,18 +358,21 @@ def recv_msg():
         else:
             memo2_cnt += 1
             gui.memo_recv.insert(INSERT, "{:d}: ".format(memo2_cnt, n))
+            gui.memo_recv.see("end")
 
         if mode == 'hex':
             if DEF_TERMINAL:
                 print("".join("{:02X} ".format(val) for val in out))
             else:
                 gui.memo_recv.insert(INSERT, "".join("{:02X} ".format(val) for val in out).join("\r\n"))
+                gui.memo_recv.see("end")
 
         elif mode == 'dec':
             if DEF_TERMINAL:
                 print("".join("{:d} ".format(val) for val in out))
             else:
                 gui.memo_recv.insert(INSERT, "".join("{:0d} ".format(val) for val in out).join("\r\n"))
+                gui.memo_recv.see("end")
 
         elif mode == 'sym':
 
@@ -376,23 +383,27 @@ def recv_msg():
                         print(chr(i), end='')
                     else:
                         gui.memo_recv.insert(INSERT, chr(i))
+                        gui.memo_recv.see("end")
 
                 except:
                     if DEF_TERMINAL:
                         print('x', end=' ')
                     else:
                         gui.memo_recv.insert(INSERT, "x")
+                        gui.memo_recv.see("end")
 
             if DEF_TERMINAL:
                 print('\r\n', out, end=' ')
             else:
                 gui.memo_recv.insert(INSERT, "\r\n")
+                gui.memo_recv.see("end")
 
         else:
             if DEF_TERMINAL:
                 print(out, end=' ')
             else:
                 gui.memo_recv.insert(INSERT, "else var\r\n")
+                gui.memo_recv.see("end")
 
     return out
 
@@ -403,10 +414,10 @@ def func_recv():
         n = len(msg_recv)
         if (n > 2):
             res = crc16_modbus.CRC16(msg_recv, n - 2)
-            if res == (msg_recv[-1] + msg_recv[-2] * 256):
-                print("__OK__", end=' ')
-            else:
-                print("__!!! FAIL !!!__", end=' ')
+            # if res == (msg_recv[-1] + msg_recv[-2] * 256):
+            #     print("__OK__", end=' ')
+            # else:
+            #    print("__!!! FAIL !!!__", end=' ')
         if(n>0):
             print("\r\n")
 
@@ -431,6 +442,15 @@ def func_clear2():
     gui.memo_recv.delete(1.0, END)
     return
 
+def func_clear_memo_recv():
+	global memo_recv_pause
+	memo_recv_pause=1-memo_recv_pause
+	if memo_recv_pause:
+		gui.btn_pause1.config(text="start")
+	else:
+		gui.btn_pause1.config(text="pause")	
+	return	
+	
 def func_create_modbus_msg():
     id = int(gui.ent1.get(), 16)
     func = int(gui.ent2.get(), 16)
@@ -488,6 +508,8 @@ def main():
     gui.btn_clr1.config(command=func_clear)
     gui.btn_clr2.config(command=func_clear2)
     gui.btn_get_msg.config(command=func_create_modbus_msg)
+    gui.btn_pause1.config(command=func_clear_memo_recv)
+    
 
     gui.start()
 
@@ -575,7 +597,7 @@ def main():
 
 # Win
 _port = 'COM7'
-_baudrate = 115200
+_baudrate = 2000000
 N_TX = 512
 mode = 'hex'
 dict_mode = {'1': 'hex', '2': 'dec', '3': 'sym'}
@@ -587,6 +609,10 @@ _wr_en = 0
 comlist = serial.tools.list_ports.comports()
 for port, desc, hwid in sorted(comlist):
     print("{}: {} [{}]".format(port, desc, hwid))
+
+
+_port = input("COM-Port: ")
+print("")
 
 # ----- Set serial port parametrs ----- #
 
@@ -706,6 +732,7 @@ if wr_en == 1:
     filename = os.getcwd() + '/rxdata_' + date0 + '_' + time0 + '.txt'
     file1 = open(filename, 'w')
     print(filename, '\r\n')
+    # file1.write("")
 
 
 print('!!! Exit - Ctrl+Shift+C !!!')

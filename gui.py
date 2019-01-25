@@ -120,6 +120,8 @@ btn_get_msg = btn(master=root) # or btn1 = btn(master=root, text="press", backgr
 btn_send = btn(master=root)
 btn_clr1 = btn(master=root)
 btn_clr2 = btn(master=root)
+btn_pause1 = btn(master=root)
+
 ent1 = ent(master=root) # or ent1 = ent(master=root, background="white", foreground="black")
 ent2 = ent(master=root)
 ent3 = ent(master=root)
@@ -154,13 +156,14 @@ def create_place():
     print()
 
     # location on master with .place()
-    root_wdt = 640
+    root_wdt = 800
     root_hgh = 480
     btn_wdt = 60
     btn_hgh = 20
     ent_wdt = 60
     ent_hgh = 20
-    memo_wdt = 290
+    memo_wdt = 200
+    memo_wdt_recv = root_wdt - memo_wdt - 40
     root.geometry("{:d}x{:d}+0+0".format(root_wdt, root_hgh))
 
 
@@ -218,12 +221,12 @@ def create_place():
 
     memo_recv.config(bg="white", fg=color_fg, borderwidth=2, relief="sunken")
     memo_recv.config(yscrollcommand=scrolly_recv.set)
-    memo_recv.place(x=memo_wdt + 20, y=160, width=memo_wdt, height=(root_hgh - 160) - 40)
+    memo_recv.place(x=memo_wdt + 20, y=160, width=memo_wdt_recv, height=(root_hgh - 160) - 40)
 
     memo_recv.bind("<Button-3>", (callback_memo_click_right))
 
     scrolly_recv.config(command=memo_recv.yview, background="red")
-    scrolly_recv.place(x=2*memo_wdt + 20, y=160, height=(root_hgh - 160) - 40)
+    scrolly_recv.place(x=memo_wdt + memo_wdt_recv + 20, y=160, height=(root_hgh - 160) - 40)
 
     btn_send.config(text="send")
     btn_send.place(x=10, y=270, width=btn_wdt, height=btn_hgh)
@@ -232,7 +235,10 @@ def create_place():
     btn_clr1.place(x=memo_wdt - btn_wdt, y=270, width=btn_wdt, height=btn_hgh)
 
     btn_clr2.config(text="clr")
-    btn_clr2.place(x=2 * memo_wdt + 20 - btn_wdt, y=root_hgh - 40 + 10, width=btn_wdt, height=btn_hgh)
+    btn_clr2.place(x=memo_wdt + memo_wdt_recv + 20 - btn_wdt, y=root_hgh - 40 + 10, width=btn_wdt, height=btn_hgh)
+    
+    btn_pause1.config(text="pause")
+    btn_pause1.place(x=memo_wdt + memo_wdt_recv + 20 - (btn_wdt+10)*2, y=root_hgh - 40 + 10, width=btn_wdt, height=btn_hgh)
 
     color1 = "#00007878D7D7"
     color2 = "#0078D7"
